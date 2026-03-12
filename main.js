@@ -269,8 +269,8 @@ function onResults(results) {
             }
         }
         if (lowShelf && highShelf) {
-            state.smoothedLowGain += (state.targetLowGain - state.smoothedLowGain) * 0.1;
-            state.smoothedHighGain += (state.targetHighGain - state.smoothedHighGain) * 0.1;
+            state.smoothedLowGain += (state.targetLowGain - state.smoothedLowGain) * 0.8;
+            state.smoothedHighGain += (state.targetHighGain - state.smoothedHighGain) * 0.8;
 
             lowShelf.gain.value = state.smoothedLowGain;
             highShelf.gain.value = state.smoothedHighGain;
@@ -546,11 +546,11 @@ function startConduct() {
 
             lowShelf = audioCtx.createBiquadFilter();
             lowShelf.type = 'lowshelf';
-            lowShelf.frequency.value = 250; // Low frequency cutoff
+            lowShelf.frequency.value = 100; // Low frequency cutoff
 
             highShelf = audioCtx.createBiquadFilter();
             highShelf.type = 'highshelf';
-            highShelf.frequency.value = 2500; // High frequency cutoff
+            highShelf.frequency.value = 1200; // High frequency cutoff
 
             panner = audioCtx.createStereoPanner();
             sourceNode.connect(lowShelf);
