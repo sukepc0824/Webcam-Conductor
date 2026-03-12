@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Conductor</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- MediaPipe dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="ui-container">
+        <div id="game-state">
+            <button id="start-btn" style="display: none;">指揮を始める</button>
+            <div id="audio-settings">
+                <audio id="bgm" src="assets/sample.mp3"></audio>
+                <audio id="clap-sound" src="assets/clap.mp3"></audio>
+            </div>
+            <p id="instruction"></p>
+            <p id="instruction-en"></p>
+        </div>
+    </div>
+    <div class="instruction-bottom">
+        <p id="ui-high-boost">← 高音を強調 (High Boost) </p>
+        <p id="ui-low-boost">低音を強調 (Low Boost) →</p>
+    </div>
+    <div id="progress-container" style="display: none;">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div id="video-container">
+        <video id="input_video" style="display: none;"></video>
+        <canvas id="output_canvas" width="1280" height="720"></canvas>
+    </div>
+    <p id="result-text">
+        Music: Radetsky March, U.S. Marine Band (Public Domain)
+        <br>
+        Software: Google MediaPipe (MIT License)
+        <br>
+        Development: @pcsuke
+    </p>
+
+    <script src="main.js"></script>
+</body>
+
+</html>

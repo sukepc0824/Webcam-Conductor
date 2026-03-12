@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビートマップ作成ツール</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #21262d;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent2: #3fb950;
+            --danger: #f85149;
+            --text: #e6edf3;
+            --muted: #8b949e;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        /* Upload area */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-zone .icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .upload-zone .file-name {
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Transport bar */
+        .transport {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+            font-family: inherit;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0d1117;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-success {
+            background: var(--accent2);
+            color: #0d1117;
+        }
+
+        .btn-ghost {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .time-display {
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--accent);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* seek bar */
+        .seek-wrap {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .seek-wrap input[type=range] {
+            flex: 1;
+            accent-color: var(--accent);
+            height: 6px;
+            cursor: pointer;
+        }
+
+        .seek-time {
+            font-size: 0.85rem;
+            color: var(--muted);
+            min-width: 40px;
+        }
+
+        /* Beat button */
+        #beat-btn {
+            width: 100%;
+            padding: 28px;
+            font-size: 1.3rem;
+            border-radius: 12px;
+            background: var(--surface2);
+            border: 2px solid var(--border);
+            color: var(--text);
+            transition: background 0.1s, border-color 0.1s, transform 0.08s;
+        }
+
+        #beat-btn:active,
+        #beat-btn.pressed {
+            background: rgba(88, 166, 255, 0.2);
+            border-color: var(--accent);
+            transform: scale(0.97);
+        }
+
+        #beat-btn:disabled {
+            opacity: 0.35;
+        }
+
+        /* Flash overlay */
+        #flash {
+            position: fixed;
+            inset: 0;
+            background: rgba(88, 166, 255, 0.18);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s;
+            z-index: 100;
+        }
+
+        #flash.active {
+            opacity: 1;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .stat {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 18px;
+        }
+
+        .stat .label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 2px;
+        }
+
+        .stat .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Beat list */
+        #beat-list-wrap {
+            max-height: 220px;
+            overflow-y: auto;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .beat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .beat-row:hover {
+            background: rgba(88, 166, 255, 0.08);
+        }
+
+        .beat-row .beat-time {
+            color: var(--text);
+        }
+
+        .beat-row .beat-interval {
+            color: var(--accent2);
+        }
+
+        .beat-row .del-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="flash"></div>
+    <audio id="audio"></audio>
+
+    <h1>🥁 ビートマップ作成ツール</h1>
+    <p class="subtitle">音楽を再生し、拍に合わせてスペースキー（またはボタン）を押して記録する</p>
+
+    <!-- File Upload -->
+    <div class="card">
+        <h2>① 音楽ファイルを選択</h2>
+        <div class="upload-zone" id="upload-zone">
+            <input type="file" id="audio-upload" accept="audio/*">
+            <div class="icon">🎵</div>
+            <p>クリックまたはドラッグ＆ドロップ</p>
+            <p>MP3 / WAV / AAC など</p>
+            <p class="file-name" id="file-name-display"></p>
+        </div>
+    </div>
+
+    <!-- Transport -->
+    <div class="card">
+        <h2>② 再生コントロール</h2>
+        <div class="transport">
+            <button class="btn btn-primary" id="play-btn" disabled>▶ 再生</button>
+            <button class="btn btn-ghost" id="restart-btn" disabled>↩ 先頭へ</button>
+            <span class="time-display" id="time-display">0.000</span>
+        </div>
+        <div class="seek-wrap">
+            <span class="seek-time" id="seek-start">0:00</span>
+            <input type="range" id="seek-bar" min="0" max="100" step="0.01" value="0" disabled>
+            <span class="seek-time" id="seek-end">0:00</span>
+        </div>
+    </div>
+
+    <!-- Beat input -->
+    <div class="card">
+        <h2>③ 拍を記録</h2>
+        <button id="beat-btn" disabled>🥁 拍を打つ（スペースキー）</button>
+        <p class="hint">再生中にスペースキーまたはボタンを押すたびにタイムスタンプが記録されます</p>
+
+        <div class="stats" style="margin-top:16px;">
+            <div class="stat">
+                <div class="label">記録数</div>
+                <div class="value" id="stat-count">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">平均BPM</div>
+                <div class="value" id="stat-bpm">—</div>
+            </div>
+            <div class="stat">
+                <div class="label">直前の間隔</div>
+                <div class="value" id="stat-interval">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Beat list & Export -->
+    <div class="card">
+        <h2>④ 記録済みタイムスタンプ</h2>
+        <div class="row" style="margin-bottom:12px;">
+            <button class="btn btn-danger btn-ghost" id="clear-btn" disabled
+                style="border-color:var(--danger);color:var(--danger);background:transparent;">🗑 全削除</button>
+            <button class="btn btn-ghost" id="undo-btn" disabled>↩ 1つ削除</button>
+            <button class="btn btn-success" id="export-btn" disabled>⬇ TXTをダウンロード</button>
+        </div>
+        <div id="beat-list-wrap">
+            <div style="text-align:center;padding:20px;color:var(--muted);">まだ記録がありません</div>
+        </div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('audio');
+        const audioUpload = document.getElementById('audio-upload');
+        const uploadZone = document.getElementById('upload-zone');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const playBtn = document.getElementById('play-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const timeDisplay = document.getElementById('time-display');
+        const seekBar = document.getElementById('seek-bar');
+        const seekStart = document.getElementById('seek-start');
+        const seekEnd = document.getElementById('seek-end');
+        const beatBtn = document.getElementById('beat-btn');
+        const statCount = document.getElementById('stat-count');
+        const statBpm = document.getElementById('stat-bpm');
+        const statInterval = document.getElementById('stat-interval');
+        const clearBtn = document.getElementById('clear-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const beatListWrap = document.getElementById('beat-list-wrap');
+        const flash = document.getElementById('flash');
+
+        let beats = []; // timestamps in seconds
+        let isLoaded = false;
+        let seeking = false;
+
+        // ---- File loading ----
+        function loadAudioFile(file) {
+            const url = URL.createObjectURL(file);
+            audio.src = url;
+            fileNameDisplay.textContent = file.name;
+            audio.load();
+            audio.addEventListener('loadedmetadata', () => {
+                seekBar.max = audio.duration;
+                seekEnd.textContent = fmt(audio.duration);
+                isLoaded = true;
+                playBtn.disabled = false;
+                restartBtn.disabled = false;
+                beatBtn.disabled = false;
+                seekBar.disabled = false;
+            }, { once: true });
+        }
+
+        audioUpload.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) loadAudioFile(file);
+        });
+
+        // Drag & drop
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) loadAudioFile(file);
+        });
+
+        // ---- Transport ----
+        playBtn.addEventListener('click', togglePlay);
+        restartBtn.addEventListener('click', () => {
+            audio.pause();
+            audio.currentTime = 0;
+            playBtn.textContent = '▶ 再生';
+        });
+
+        function togglePlay() {
+            if (!isLoaded) return;
+            if (audio.paused) {
+                audio.play();
+                playBtn.textContent = '⏸ 一時停止';
+            } else {
+                audio.pause();
+                playBtn.textContent = '▶ 再生';
+            }
+        }
+
+        // Seek bar
+        seekBar.addEventListener('mousedown', () => { seeking = true; });
+        seekBar.addEventListener('mouseup', () => {
+            seeking = false;
+            if (isLoaded) audio.currentTime = parseFloat(seekBar.value);
+        });
+        seekBar.addEventListener('touchstart', () => { seeking = true; });
+        seekBar.addEventListener('touchend', () => {
+            seeking = false;
+            if (isLoaded) audio.currentTime = parseFloat(seekBar.value);
+        });
+
+        // Time updates
+        audio.addEventListener('timeupdate', () => {
+            const t = audio.currentTime;
+            timeDisplay.textContent = t.toFixed(3);
+            seekStart.textContent = fmt(t);
+            if (!seeking) seekBar.value = t;
+        });
+
+        audio.addEventListener('ended', () => {
+            playBtn.textContent = '▶ 再生';
+        });
+
+        function fmt(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // ---- Beat recording ----
+        function recordBeat() {
+            if (!isLoaded || audio.paused) return;
+            const t = audio.currentTime;
+            beats.push(t);
+            beats.sort((a, b) => a - b);
+            flashScreen();
+            pulseButton();
+            updateStats();
+            renderBeatList();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' && e.target === document.body) {
+                e.preventDefault();
+                recordBeat();
+            }
+        });
+        beatBtn.addEventListener('click', recordBeat);
+
+        function flashScreen() {
+            flash.classList.add('active');
+            clearTimeout(flash._t);
+            flash._t = setTimeout(() => flash.classList.remove('active'), 120);
+        }
+
+        function pulseButton() {
+            beatBtn.classList.add('pressed');
+            setTimeout(() => beatBtn.classList.remove('pressed'), 120);
+        }
+
+        // ---- Stats ----
+        function updateStats() {
+            statCount.textContent = beats.length;
+            if (beats.length >= 2) {
+                const last = beats[beats.length - 1];
+                const prev = beats[beats.length - 2];
+                const interval = last - prev;
+                statInterval.textContent = interval.toFixed(3) + 's';
+
+                // Average BPM from first to last beat
+                const span = beats[beats.length - 1] - beats[0];
+                const avgInterval = span / (beats.length - 1);
+                statBpm.textContent = Math.round(60 / avgInterval);
+            } else {
+                statInterval.textContent = '—';
+                statBpm.textContent = '—';
+            }
+            clearBtn.disabled = beats.length === 0;
+            undoBtn.disabled = beats.length === 0;
+            exportBtn.disabled = beats.length === 0;
+        }
+
+        // ---- Beat list rendering ----
+        function renderBeatList() {
+            if (beats.length === 0) {
+                beatListWrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">まだ記録がありません</div>';
+                return;
+            }
+            let html = '';
+            for (let i = 0; i < beats.length; i++) {
+                const t = beats[i];
+                const interval = i > 0 ? (t - beats[i - 1]).toFixed(3) + 's' : '—';
+                html += `<div class="beat-row">
+        <span>${i + 1}.</span>
+        <span class="beat-time">${t.toFixed(3)}秒</span>
+        <span class="beat-interval">${interval}</span>
+        <button class="del-btn" data-idx="${i}" title="この拍を削除">✕</button>
+      </div>`;
+            }
+            beatListWrap.innerHTML = html;
+            // Scroll to bottom
+            beatListWrap.scrollTop = beatListWrap.scrollHeight;
+
+            // Delete individual beat
+            beatListWrap.querySelectorAll('.del-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.idx, 10);
+                    beats.splice(idx, 1);
+                    updateStats();
+                    renderBeatList();
+                });
+            });
+        }
+
+        // ---- Controls ----
+        clearBtn.addEventListener('click', () => {
+            if (!confirm('全タイムスタンプを削除しますか？')) return;
+            beats = [];
+            updateStats();
+            renderBeatList();
+        });
+
+        undoBtn.addEventListener('click', () => {
+            beats.pop();
+            updateStats();
+            renderBeatList();
+        });
+
+        exportBtn.addEventListener('click', () => {
+            if (beats.length === 0) return;
+            const content = beats.map(t => t.toFixed(4)).join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const base = fileNameDisplay.textContent.replace(/\.[^.]+$/, '') || 'beatmap';
+            a.download = base + '_beatmap.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+
+</html>
