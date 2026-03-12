@@ -360,7 +360,7 @@ function onResults(results) {
         canvasCtx.save();
         canvasCtx.translate(marker.canvasX - 24, marker.canvasY - 34);
         canvasCtx.scale(-1, 1);
-        canvasCtx.font = '32px Zen Kaku Gothic New';
+        canvasCtx.font = '30px Zen Kaku Gothic New';
         canvasCtx.textAlign = 'center';
         canvasCtx.textBaseline = 'middle';
         canvasCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
@@ -517,9 +517,9 @@ const hands = new Hands({
 });
 hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 1, // 0にすると軽く/速くなりますが、精度は1の方が良いです
+    modelComplexity: 1,
     minDetectionConfidence: 0.1,
-    minTrackingConfidence: 0.3 // 高速に動かした際のブレ(blur)でも追跡を諦めないように低く設定
+    minTrackingConfidence: 0.3
 });
 hands.onResults(onResults);
 
